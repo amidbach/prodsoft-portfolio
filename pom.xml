@@ -58,6 +58,10 @@
 	</dependencies>
 
 	<build>
+<!-- -->
+		<finalName>bbsoft-${project.artifactId}-${project.version}</finalName>
+<!-- -->
+		<defaultGoal>spring-boot:run</defaultGoal>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
