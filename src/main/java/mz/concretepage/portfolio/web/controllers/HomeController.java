@@ -39,4 +39,12 @@ public class HomeController {
         model.addAttribute("title", "Contact");
         return "master";
     }
+
+    @GetMapping({"/qr-utility"})
+    String showQrUtilityPage(Model model) {
+        LOG.debug("/prodsoft-qr-utility URI: INI...");
+        model.addAttribute("prodsoft-qr-utility", "Prodsoft QR Utility");
+        return "prodsoft-qr-utility";
+    }
+
 }

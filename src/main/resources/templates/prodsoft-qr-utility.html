@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>ProdSoft.co.mz - Certificates QR Utility</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&amp;family=Inter:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- ZXing Library -->
+<script src="https://unpkg.com/@zxing/library@latest"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface": "#f8f9fa",
+              "surface-dim": "#d9dadb",
+              "surface-bright": "#f8f9fa",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-low": "#f3f4f5",
+              "surface-container": "#edeeef",
+              "surface-container-high": "#e7e8e9",
+              "surface-container-highest": "#e1e3e4",
+              "primary": "#0057cd",
+              "on-primary": "#ffffff",
+              "primary-container": "#0d6efd",
+              "on-primary-container": "#ffffff",
+              "secondary": "#38656a",
+              "on-secondary": "#ffffff",
+              "secondary-container": "#bbebf1",
+              "on-secondary-container": "#3e6b70",
+              "outline": "#727787",
+              "outline-variant": "#c2c6d8",
+              "on-surface": "#191c1d",
+              "on-surface-variant": "#424655"
+            },
+            borderRadius: {
+              "DEFAULT": "8px",
+              "lg": "12px",
+              "xl": "16px"
+            },
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              headline: ["Hanken Grotesk", "sans-serif"]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        /* CSS SECTION */
+        body {
+            background-color: #f8f9fa;
+            color: #191c1d;
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .font-headline {
+            font-family: 'Hanken Grotesk', sans-serif;
+        }
+
+        .header-shadow {
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .scanner-card {
+            background: white;
+            border: 1px solid #e1e3e4;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .tab-active {
+            color: #0d6efd;
+            border-bottom: 2px solid #0d6efd;
+        }
+
+        .preview-area {
+            background-color: #f8f9fa;
+            border: 1px solid #e1e3e4;
+            border-radius: 8px;
+            aspect-ratio: 4/3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .result-area {
+            background-color: #f1f3f4;
+            border-radius: 8px;
+            padding: 16px;
+            min-height: 300px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        canvas {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .hidden-input {
+            display: none;
+        }
+
+        .btn-primary {
+            background-color: #0d6efd;
+            color: white;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .btn-outline {
+            border: 1px solid #c2c6d8;
+            color: #424655;
+        }
+
+        .footer-link {
+            color: #424655;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer-link:hover {
+            color: #0d6efd;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+<!-- HEADER -->
+<header class="bg-white header-shadow sticky top-0 z-50">
+<div class="max-w-[1200px] mx-auto px-6 h-20 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="text-[#38656a]">
+<svg fill="none" height="32" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewbox="0 0 24 24" width="32">
+<path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
+<path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
+<path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
+<path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
+<rect fill="currentColor" height="10" width="10" x="7" y="7"></rect>
+</svg>
+</div>
+<span class="text-2xl font-bold font-headline tracking-tight text-[#38656a]">ProdSoft - QR Utility</span>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-on-surface-variant hover:text-primary font-medium text-sm" href="#">Image Scanner</a>
+<a class="text-on-surface-variant hover:text-primary font-medium text-sm" href="#">WiFi QR</a>
+<a class="text-on-surface-variant hover:text-primary font-medium text-sm" href="#">Generator</a>
+<a class="text-on-surface-variant hover:text-primary font-medium text-sm" href="#">About</a>
+<button class="px-5 py-2 border border-outline rounded-lg font-medium text-sm hover:bg-surface-container transition-colors">Get App</button>
+<button class="relative">
+<span class="material-symbols-outlined text-on-surface-variant">history</span>
+<span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"></span>
+</button>
+</nav>
+</div>
+</header>
+<main class="flex-grow max-w-[1200px] mx-auto w-full px-6 py-12">
+<!-- HERO SECTION -->
+<div class="mb-10">
+<h1 class="text-3xl font-bold font-headline text-on-surface mb-2">Scan QR Code</h1>
+<p class="text-on-surface-variant">Drop an image or use your webcam to scan</p>
+</div>
+<!-- SCANNER SECTION -->
+<div class="scanner-card shadow-sm">
+<!-- Tabs Header -->
+<div class="flex items-center justify-between border-b border-outline-variant px-6">
+<div class="flex">
+<button class="flex items-center gap-2 py-4 px-6 text-sm font-medium transition-all tab-active" id="tab-upload">
+<span class="material-symbols-outlined text-lg">image</span>
+                    Upload Image
+                </button>
+<button class="flex items-center gap-2 py-4 px-6 text-sm font-medium transition-all text-on-surface-variant hover:text-primary border-b-2 border-transparent" id="tab-webcam">
+<span class="material-symbols-outlined text-lg">videocam</span>
+                    Use Webcam
+                </button>
+</div>
+<div class="hidden sm:flex items-center gap-1 text-[11px] font-medium text-on-surface-variant/60 uppercase tracking-wider">
+<span>100% Private</span>
+<span class="mx-1">•</span>
+<span>Runs in your browser</span>
+</div>
+</div>
+<div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+<!-- Left Side: Viewfinder & Controls -->
+<div class="flex flex-col gap-4">
+<div class="preview-area" id="viewfinder">
+<!-- Upload Placeholder -->
+<div class="flex flex-col items-center text-center p-8 border-2 border-dashed border-outline-variant/50 rounded-lg w-full h-full justify-center bg-surface-container-lowest" id="upload-placeholder">
+<div class="relative w-20 h-20 mb-4">
+<svg class="w-full h-full text-yellow-400" fill="currentColor" viewbox="0 0 24 24">
+<path d="M20,6h-8l-2-2H4C2.9,4,2,4.9,2,6v12c0,1.1,0.9,2,2,2h16c1.1,0,2-0.9,2-2V8C22,6.9,21.1,6,20,6z"></path>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center pt-2">
+<span class="material-symbols-outlined text-white text-3xl font-bold">arrow_upward</span>
+</div>
+</div>
+<p class="text-sm font-bold text-on-surface mb-1">Drop QR image here, or browse</p>
+<p class="text-[10px] text-on-surface-variant/60 uppercase font-bold tracking-widest">PNG • JPG • WEBP • GIF • BMP</p>
+</div>
+<!-- Webcam Placeholder -->
+<div class="hidden flex-col items-center text-center p-8" id="webcam-placeholder">
+<span class="material-symbols-outlined text-6xl text-outline-variant mb-4">videocam_off</span>
+<p class="text-sm text-on-surface-variant font-medium">Camera is off.</p>
+<p class="text-[12px] text-on-surface-variant/70">Press Start Camera to scan.</p>
+</div>
+<video class="hidden" id="video"></video>
+<canvas class="hidden" id="canvas"></canvas>
+</div>
+<!-- Action Buttons -->
+<div class="flex gap-2" id="controls-webcam" style="display: none;">
+<button class="flex-grow btn-primary flex items-center justify-center gap-2 py-3 rounded-lg font-semibold text-sm" id="btn-start-camera">
+<span class="material-symbols-outlined text-xl">photo_camera</span>
+                        Start Camera
+                    </button>
+<button class="btn-outline p-3 rounded-lg flex items-center justify-center hover:bg-surface-container transition-colors" id="btn-switch-camera" title="Switch Camera">
+<span class="material-symbols-outlined">flip_camera_ios</span>
+</button>
+<button class="btn-outline p-3 rounded-lg flex items-center justify-center hover:bg-surface-container transition-colors" id="btn-snapshot" title="Take Snapshot">
+<span class="material-symbols-outlined">photo_camera</span>
+</button>
+</div>
+<div class="flex gap-2" id="controls-upload">
+<button class="flex-grow btn-primary flex items-center justify-center gap-2 py-3 rounded-lg font-semibold text-sm" id="btn-browse">
+                        Browse files
+                    </button>
+<button class="flex-grow bg-white border border-outline-variant text-on-surface-variant flex items-center justify-center gap-2 py-3 rounded-lg font-semibold text-sm hover:bg-surface-container transition-colors" id="btn-paste">
+                        Paste image
+                    </button>
+</div>
+<input accept="image/*,application/pdf" class="hidden-input" id="file-input" type="file"/>
+</div>
+<!-- Right Side: Scanned Result -->
+<div class="flex flex-col">
+<div class="flex items-center justify-between mb-4">
+<h2 class="font-bold font-headline text-on-surface">Scanned Result</h2>
+<div class="flex items-center gap-2 bg-surface-container px-3 py-1.5 rounded-md text-[12px] font-medium text-on-surface-variant">
+                        History
+                        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+</div>
+</div>
+<div class="flex items-center gap-2 text-[12px] text-on-surface-variant/70 mb-3">
+<span class="w-2 h-2 bg-outline-variant rounded-full" id="status-dot"></span>
+<span id="status-text">Waiting for image...</span>
+</div>
+<div class="result-area mb-4 flex flex-col items-center justify-center text-on-surface-variant/40" id="result-content">
+<span class="italic">Scan a QR code to see results here...</span>
+</div>
+<button class="w-full py-4 bg-[#6e9cf8] text-white font-bold rounded-lg transition-colors cursor-not-allowed opacity-80" disabled="" id="btn-copy">
+                    Copy Result
+                </button>
+</div>
+</div>
+<!-- Privacy Footer Banner -->
+<div class="bg-surface-container-low px-6 py-3 flex flex-col sm:flex-row items-center justify-between text-[11px] font-medium text-on-surface-variant/80 border-t border-outline-variant/30">
+<div class="flex items-center gap-2 mb-2 sm:mb-0">
+<span class="material-symbols-outlined text-sm">verified_user</span>
+                Your images never leave this device — 100% browser-based
+            </div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">code</span>
+                Powered by <a class="underline hover:text-primary" href="#">Google's ZXing</a>
+</div>
+</div>
+</div>
+</main>
+<!-- FOOTER -->
+<footer class="bg-white border-t border-outline-variant mt-12 py-16">
+<div class="max-w-[1200px] mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
+<!-- About -->
+<div>
+<h3 class="font-bold font-headline text-on-surface uppercase tracking-wider mb-6">About ProdSoft</h3>
+<p class="text-sm text-on-surface-variant leading-relaxed mb-4">
+                ProdSoft QR-Utility is a <strong class="text-on-surface">QR code scanner</strong>. It can scan QR codes from images and through any webcam. Use it online without downloading any app.
+            </p>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                The ProdSoft QR web app scans QR codes locally without uploading them to our servers. Your data and privacy are our top priority. Built with Cosmo Wolfe's JavaScript port of Google's ZXing library.
+            </p>
+</div>
+<!-- More Tools -->
+<div>
+<h3 class="font-bold font-headline text-on-surface uppercase tracking-wider mb-6">More Tools</h3>
+<ul class="flex flex-col gap-3">
+<li><a class="footer-link text-sm" href="#">WiFi QR Code Scanner</a></li>
+<li><a class="footer-link text-sm" href="#">Image QR Code Scanner</a></li>
+<li><a class="footer-link text-sm" href="#">QR Code Generator</a></li>
+<li><a class="footer-link text-sm" href="#">ProdSoft Homepage</a></li>
+</ul>
+</div>
+<!-- Contact -->
+<div>
+<h3 class="font-bold font-headline text-on-surface uppercase tracking-wider mb-6">Contact</h3>
+<div class="flex items-center gap-3 mb-4 text-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-primary text-lg">location_on</span>
+                PHA Avenue, ISB, PK
+            </div>
+<div class="flex items-center gap-3 text-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-primary text-lg">mail</span>
+                support@prodsoft.co.
+            </div>
+</div>
+<!-- Data Privacy -->
+<div>
+<h3 class="font-bold font-headline text-on-surface uppercase tracking-wider mb-6">Data Privacy</h3>
+<p class="text-sm text-on-surface-variant leading-relaxed mb-4">
+<strong class="text-on-surface">Your data never leaves your device.</strong> ProdSoft QR Utility processes all scans locally in your browser — no uploads, no server storage, no content tracking.
+            </p>
+<a class="text-primary text-sm font-medium hover:underline flex items-center gap-1" href="#">
+                Read our Privacy Policy →
+            </a>
+</div>
+</div>
+<!-- Bottom Copyright -->
+<div class="max-w-[1200px] mx-auto px-6 mt-16 pt-8 border-t border-outline-variant/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+<p class="text-[12px] text-on-surface-variant opacity-60">Copyright © ProdSoft 2026</p>
+<div class="flex items-center gap-6 text-[12px] text-on-surface-variant opacity-60">
+<a class="hover:text-primary" href="#">Privacy</a>
+<span class="text-outline-variant">•</span>
+<a class="hover:text-primary" href="#">Terms</a>
+<span class="text-outline-variant">•</span>
+<a class="hover:text-primary" href="#">Contact</a>
+</div>
+</div>
+</footer>
+<script>
+    /* JAVASCRIPT SECTION */
+    const codeReader = new ZXing.BrowserQRCodeReader();
+    let scanning = false;
+    let currentTab = 'upload'; 
+    let currentFacingMode = 'environment'; // default to back camera
+
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const uploadPlaceholder = document.getElementById('upload-placeholder');
+    const webcamPlaceholder = document.getElementById('webcam-placeholder');
+    
+    const statusText = document.getElementById('status-text');
+    const statusDot = document.getElementById('status-dot');
+    const resultContent = document.getElementById('result-content');
+    
+    const fileInput = document.getElementById('file-input');
+    const btnBrowse = document.getElementById('btn-browse');
+    const btnPaste = document.getElementById('btn-paste');
+    const btnStartCamera = document.getElementById('btn-start-camera');
+    const btnSwitchCamera = document.getElementById('btn-switch-camera');
+    const btnSnapshot = document.getElementById('btn-snapshot');
+    const btnCopy = document.getElementById('btn-copy');
+
+    const tabUpload = document.getElementById('tab-upload');
+    const tabWebcam = document.getElementById('tab-webcam');
+    const controlsUpload = document.getElementById('controls-upload');
+    const controlsWebcam = document.getElementById('controls-webcam');
+
+    // Tab Switching
+    tabUpload.addEventListener('click', () => {
+        if (currentTab === 'upload') return;
+        stopScanning();
+        currentTab = 'upload';
+        
+        tabUpload.classList.add('tab-active');
+        tabUpload.classList.remove('text-on-surface-variant');
+        tabWebcam.classList.remove('tab-active');
+        tabWebcam.classList.add('text-on-surface-variant');
+        
+        controlsUpload.style.display = 'flex';
+        controlsWebcam.style.display = 'none';
+        
+        uploadPlaceholder.classList.remove('hidden');
+        webcamPlaceholder.classList.add('hidden');
+        video.classList.add('hidden');
+        canvas.classList.add('hidden');
+        
+        statusText.innerText = "Waiting for image...";
+        statusDot.className = 'w-2 h-2 bg-outline-variant rounded-full';
+    });
+
+    tabWebcam.addEventListener('click', () => {
+        if (currentTab === 'webcam') return;
+        currentTab = 'webcam';
+        
+        tabWebcam.classList.add('tab-active');
+        tabWebcam.classList.remove('text-on-surface-variant');
+        tabUpload.classList.remove('tab-active');
+        tabUpload.classList.add('text-on-surface-variant');
+        
+        controlsUpload.style.display = 'none';
+        controlsWebcam.style.display = 'flex';
+        
+        uploadPlaceholder.classList.add('hidden');
+        webcamPlaceholder.classList.remove('hidden');
+        canvas.classList.add('hidden');
+        
+        statusText.innerText = "Camera stopped";
+        statusDot.className = 'w-2 h-2 bg-outline-variant rounded-full';
+    });
+
+    // --- UPLOAD LOGIC ---
+    btnBrowse.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) processFile(file);
+    });
+
+    btnPaste.addEventListener('click', async () => {
+        try {
+            const items = await navigator.clipboard.read();
+            for (const item of items) {
+                for (const type of item.types) {
+                    if (type.startsWith('image/')) {
+                        const blob = await item.getType(type);
+                        processFile(blob);
+                        return;
+                    }
+                }
+            }
+            alert("No image found on clipboard.");
+        } catch (err) {
+            console.error('Failed to read clipboard: ', err);
+        }
+    });
+
+    uploadPlaceholder.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadPlaceholder.classList.add('bg-primary/5');
+    });
+    uploadPlaceholder.addEventListener('dragleave', () => {
+        uploadPlaceholder.classList.remove('bg-primary/5');
+    });
+    uploadPlaceholder.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadPlaceholder.classList.remove('bg-primary/5');
+        const file = e.dataTransfer.files[0];
+        if (file) processFile(file);
+    });
+
+    function processFile(file) {
+        resetResult();
+        statusText.innerText = "Decoding image...";
+        
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                const ctx = canvas.getContext('2d');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                
+                uploadPlaceholder.classList.add('hidden');
+                canvas.classList.remove('hidden');
+
+                codeReader.decodeFromImageElement(img)
+                    .then(result => handleSuccess(result.text))
+                    .catch(err => {
+                        statusText.innerText = "No QR code found in this image";
+                        statusDot.classList.replace('bg-outline-variant', 'bg-red-500');
+                    });
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // --- WEBCAM LOGIC ---
+    async function startScanning() {
+        resetResult();
+        statusText.innerText = "Initializing camera...";
+        
+        try {
+            const constraints = {
+                video: { facingMode: currentFacingMode }
+            };
+
+            webcamPlaceholder.classList.add('hidden');
+            video.classList.remove('hidden');
+            statusText.innerText = "Scanning...";
+            statusDot.classList.replace('bg-outline-variant', 'bg-green-500');
+            btnStartCamera.innerHTML = `<span class="material-symbols-outlined text-xl">stop</span> Stop Camera`;
+            scanning = true;
+
+            await codeReader.decodeFromConstraints(constraints, 'video', (result, err) => {
+                if (result) {
+                    handleSuccess(result.text);
+                    // We don't stop scanning automatically here so user can scan multiple, 
+                    // but the requirement implies successful detection should populate the result.
+                }
+            });
+        } catch (err) {
+            console.error(err);
+            statusText.innerText = "Error: Camera access denied";
+            statusDot.classList.replace('bg-outline-variant', 'bg-red-500');
+            stopScanning();
+        }
+    }
+
+    btnStartCamera.addEventListener('click', () => {
+        if (scanning) {
+            stopScanning();
+        } else {
+            startScanning();
+        }
+    });
+
+    btnSwitchCamera.addEventListener('click', () => {
+        currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+        if (scanning) {
+            stopScanning();
+            startScanning();
+        }
+    });
+
+    btnSnapshot.addEventListener('click', () => {
+        if (!scanning) {
+            alert("Please start the camera first to take a snapshot.");
+            return;
+        }
+        
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = video.videoWidth;
+        tempCanvas.height = video.videoHeight;
+        const ctx = tempCanvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+        
+        const dataURL = tempCanvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = dataURL;
+        link.download = 'snapshot.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+
+    // --- COMMON LOGIC ---
+    function handleSuccess(text) {
+        statusText.innerText = "Success: QR Code Decoded";
+        statusDot.className = 'w-2 h-2 bg-green-500 rounded-full';
+
+        let contentHtml = `<div class="w-full text-left font-mono text-sm p-4 bg-white border border-outline-variant rounded-md shadow-inner text-on-surface break-words select-all">`;
+        const isUrl = /^(http|https):\/\/[^ "]+$/.test(text);
+        if (isUrl) {
+            contentHtml += `<a href="${text}" target="_blank" rel="noopener noreferrer" class="text-primary underline hover:opacity-80">${text}</a>`;
+        } else {
+            contentHtml += text;
+        }
+        contentHtml += `</div>`;
+        
+        resultContent.innerHTML = contentHtml;
+        
+        btnCopy.disabled = false;
+        btnCopy.classList.remove('cursor-not-allowed', 'opacity-80', 'bg-[#6e9cf8]');
+        btnCopy.classList.add('bg-primary', 'hover:bg-primary-container');
+        
+        btnCopy.onclick = () => {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = "Copy Result";
+                btnCopy.innerText = "Copied!";
+                setTimeout(() => {
+                    btnCopy.innerText = originalText;
+                }, 2000);
+            });
+        };
+    }
+
+    function stopScanning() {
+        codeReader.reset();
+        scanning = false;
+        btnStartCamera.innerHTML = `<span class="material-symbols-outlined text-xl">photo_camera</span> Start Camera`;
+        if (currentTab === 'webcam') {
+            statusText.innerText = "Camera stopped";
+            statusDot.className = 'w-2 h-2 bg-outline-variant rounded-full';
+            video.classList.add('hidden');
+            webcamPlaceholder.classList.remove('hidden');
+        }
+    }
+
+    function resetResult() {
+        resultContent.innerHTML = `<span class="italic">Scan a QR code to see results here...</span>`;
+        btnCopy.disabled = true;
+        btnCopy.classList.add('cursor-not-allowed', 'opacity-80', 'bg-[#6e9cf8]');
+        btnCopy.classList.remove('bg-primary', 'hover:bg-primary-container');
+        statusDot.className = 'w-2 h-2 bg-outline-variant rounded-full';
+    }
+</script>
+</body></html>
